@@ -1,0 +1,27 @@
+{
+    "id": "AC96851E",
+    "path": "~/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM/BIM_script.R",
+    "project_path": "BIM_script.R",
+    "type": "r_source",
+    "hash": "4157168935",
+    "contents": "",
+    "dirty": false,
+    "created": 1695225595431.0,
+    "source_on_save": false,
+    "relative_order": 1,
+    "properties": {
+        "tempName": "Untitled1",
+        "source_window_id": "",
+        "Source": "Source",
+        "cursorPosition": "12,17",
+        "scrollLine": "1"
+    },
+    "folds": "",
+    "lastKnownWriteTime": 1695225660,
+    "encoding": "UTF-8",
+    "collab_server": "",
+    "source_window": "",
+    "last_content_update": 1695225660512,
+    "read_only": false,
+    "read_only_alternatives": []
+}
