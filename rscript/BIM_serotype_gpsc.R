@@ -50,7 +50,7 @@ metadata_to_BIM_imput <- function(metadata_df, carriage_rate_df,
     pop = strsplit(as.character(pair_freq[i,1]), "_")[[1]][1]
     pair_freq$pop[i] = pop
     sero = strsplit(as.character(pair_freq[i,1]),"_")[[1]][2]
-    gpsc = strsplit(as.character(pair_freq[i,1]),"_")[[1]][3]
+    gpsc = strsplit(as.character(pair_freq[i,1]),"_")[[1]][length(strsplit(as.character(pair_freq[i,1]),"_")[[1]])]
     pop_pair_df[i, "study"] = pop
     pop_pair_df[i, "type"] = sero
     pop_pair_df[i, "strain"] = gpsc
@@ -282,7 +282,7 @@ plot_ordered_progression_rates <- function(model_output_df, type = "type", unit_
 ### Analysis
 ## Read data
 {
-  gene_path = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM/gwas_res_lrtpvalue_sorted_unitigs_e04_pres_matched.rtab"
+  gene_path = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/gwas_res_lrtpvalue_sorted_unitigs_e04_pres_matched.rtab"
   variant_pres = read.table(gene_path, header = T, row.names = 1, sep = "\t", comment.char = "$", check.names = F)
   variant_pres = as.data.frame(t(variant_pres))
   variant_pres <- variant_pres %>%
@@ -369,7 +369,7 @@ s_pneumoniae_poisson_sero_fit <- progressionEstimation::fit_progression_rate_mod
                                                                                    num_iter = 1e4)
 
 ### run serotype based variant adjusted Poisson Bayesian model
-s_pneumoniae_serobased_variantadjusted_data <- progressionEstimation::process_input_data(BIM_sero_gpsc_input, type = "type", use_strain = TRUE, combine_strain = FALSE, condense = FALSE)
+s_pneumoniae_serobased_variantadjusted_data <- progressionEstimation::process_input_data(BIM_sero_variant_input, type = "type", use_strain = TRUE, combine_strain = FALSE, condense = FALSE)
 s_pneumoniae_poisson_serobased_variantadjusted_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_serobased_variantadjusted_data,
                                                                                    type_specific = TRUE,
                                                                                    location_adjustment = TRUE,
@@ -379,11 +379,41 @@ s_pneumoniae_poisson_serobased_variantadjusted_fit <- progressionEstimation::fit
                                                                                    num_chains = 2,
                                                                                    num_iter = 1e4)
 
+### run variant based serotype adjusted Poisson Bayesian model
+s_pneumoniae_variantbased_serotypeadjusted_data <- progressionEstimation::process_input_data(BIM_sero_variant_input, type = "type", use_strain = TRUE, combine_strain = FALSE, condense = FALSE)
+s_pneumoniae_poisson_variantbased_serotypeadjusted_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_variantbased_serotypeadjusted_data,
+                                                                                                        type_specific = TRUE,
+                                                                                                        location_adjustment = TRUE,
+                                                                                                        stat_model = "poisson",
+                                                                                                        strain_as_primary_type = TRUE,
+                                                                                                        strain_as_secondary_type = FALSE,
+                                                                                                        num_chains = 2,
+                                                                                                        num_iter = 1e4)
+
+
+### run variant based Poisson Bayesian model
+colnames(BIM_sero_variant_input) <- c("study", "serotype", "carriage", "disease", "carriage_samples", "surveillance_population", "time_interval", "type")
+s_pneumoniae_variantbased_data <- progressionEstimation::process_input_data(BIM_sero_variant_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = TRUE)
+s_pneumoniae_poisson_variantbased_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_variantbased_data,
+                                                                                                            type_specific = TRUE,
+                                                                                                            location_adjustment = TRUE,
+                                                                                                            stat_model = "poisson",
+                                                                                                            strain_as_primary_type = FALSE,
+                                                                                                            strain_as_secondary_type = FALSE,
+                                                                                                            num_chains = 2,
+                                                                                                            num_iter = 1e4)
+
 save(s_pneumoniae_sero_gpsc_data, s_pneumoniae_poisson_serobased_gpsc_adjust_fit,
      s_pneumoniae_gpsc_sero_data, s_pneumoniae_poisson_gpscbased_seroadjust_fit,file = "serotype_gpsc_BIM.RData")
 
 save(s_pneumoniae_sero_data, s_pneumoniae_poisson_sero_fit,
-     s_pneumoniae_gpsc_data, s_pneumoniae_poisson_gpsc_fit, file = "serotype_gpsc_onlt_BIM.RData")
+     s_pneumoniae_gpsc_data, s_pneumoniae_poisson_gpsc_fit, file = "serotype_gpsc_only_BIM.RData")
+
+save(s_pneumoniae_serobased_variantadjusted_data, s_pneumoniae_poisson_serobased_variantadjusted_fit,
+     file = "serotype_gpsc_BIM.RData")
+
+save(s_pneumoniae_variantbased_data, s_pneumoniae_poisson_variantbased_fit, BIM_sero_variant_input,
+     file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_rdata/variant_only_BIM.RData")
 ### model comparison ----------------------------
 
 ## Model comparison to avoid overfitting: LOO-CV & Bayes Factor
@@ -409,11 +439,63 @@ sero_vs_gpsc_comparison <- progressionEstimation::compare_model_fits_with_bf(lis
 
 ## post-analysis ---------------------------------
 
+#variantbased_serotypeadjusted start 
+rstan::traceplot(s_pneumoniae_poisson_variantbased_serotypeadjusted_fit,
+                 pars= "nu_j")
+
+s_pneumoniae_poisson_variantbased_serotypeadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_variantbased_serotypeadjusted_fit, 
+                                                                                                                             BIM_sero_variant_input,
+                                                                                                                             strain_as_secondary_type = TRUE)
+write.table(s_pneumoniae_poisson_variantbased_serotypeadjusted_output_df, 
+            file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/variant_based_serotype_adjusted/s_pneumoniae_poisson_variantbased_serotypeadjusted_output_df.txt", 
+            sep="\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
+
+case_carrier_pred_variantbased_serotypeadjusted = progressionEstimation::plot_case_carrier_predictions(s_pneumoniae_poisson_variantbased_serotypeadjusted_output_df , n_label = 3)
+
+variant_prate_variantbased_serotypeadjusted = progressionEstimation::plot_progression_rates(s_pneumoniae_poisson_variantbased_serotypeadjusted_output_df,
+                                                                      type="strain",
+                                                                      unit_time= "year",
+                                                                      type_name= "Variant")
+#variantbased_serotypeadjusted end
+
+#variantbased start
+s_pneumoniae_poisson_variantbased_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_variantbased_fit, 
+                                                                                                                             BIM_sero_variant_input,
+                                                                                                                             strain_as_secondary_type = FALSE, 
+                                                                                                            condense = TRUE)
+write.table(s_pneumoniae_poisson_variantbased_output_df, 
+            file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/variant_based/s_pneumoniae_poisson_variantbased_output_df.txt", 
+            sep="\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
+
+case_carrier_pred_variantbased = progressionEstimation::plot_case_carrier_predictions(s_pneumoniae_poisson_variantbased_output_df , n_label = 3)
+
+variant_prate_variantbased = progressionEstimation::plot_progression_rates(s_pneumoniae_poisson_variantbased_output_df,
+                                                                                            type="type",
+                                                                                            unit_time= "year",
+                                                                                            type_name= "Variant")
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/variant_based/case_carrier_pred_variantbased.pdf", width=16, height = 8)
+case_carrier_pred_variantbased
+dev.off()
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/variant_based/variant_prate_variantbased.pdf", width=16, height = 8)
+variant_prate_variantbased
+dev.off()
+#variantbased end
+
+
 # Check convergence
 ## All the parameters are estimated with rhat below the generally accepted threshold of 1.05.
 ## Most of the rhat values are close to 1.0
 ## It confirms convergence of the parameter estimates
+poisson_nu_trace = rstan::traceplot(s_pneumoniae_poisson_fit,
+                                    pars= "nu_j")
+
 plot(s_pneumoniae_poisson_serobased_gpsc_adjust_fit, plotfun= "rhat", binwidth= 0.00005)
+
+
+
+
+
 
 
 
