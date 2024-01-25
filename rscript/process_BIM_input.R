@@ -98,7 +98,7 @@ metadata_to_BIM_imput <- function(metadata_df, carriage_rate_df,
 
 ## Read data
 {
-  gene_path = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM/gwas_res_lrtpvalue_sorted_unitigs_e04_pres_matched.rtab"
+  gene_path = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/gwas_res_lrtpvalue_sorted_unitigs_e04_pres_matched.rtab"
   variant_pres = read.table(gene_path, header = T, row.names = 1, sep = "\t", comment.char = "$", check.names = F)
   variant_pres = as.data.frame(t(variant_pres))
   variant_pres <- variant_pres %>%
@@ -131,12 +131,21 @@ carriage_rate_df = as.data.frame(carriage_rate_file)
 #### ---------------------------------------------
 
 input_data_list <- metadata_to_BIM_imput(GPS_Bayes_selec_candidate_variant_top1, carriage_rate_df)
+BIM_sero_gpsc_input <- input_data_list$BIM_Input_table
 
-
+save(BIM_sero_gpsc_input,
+     s_pneumoniae_sero_gpsc_data, s_pneumoniae_poisson_serobased_gpsc_adjust_fit,
+     s_pneumoniae_gpsc_sero_data, s_pneumoniae_poisson_gpscbased_seroadjust_fit,file = "serotype_gpsc_BIM.RData")
 
 #### post analysis --------------------------------
-load("/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM/serotype_gpsc_BIM.RData")
+load("/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_rdata/serotype_gpsc_BIM.RData")
 
+s_pneumoniae_poisson_gpscbased_seroadjust_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_gpscbased_seroadjust_output_df, Bframe)
+
+case_carrier_pred = progressionEstimation::plot_case_carrier_predictions(s_pneumoniae_poisson_output_df, n_label = 3)
+serotype_time_distribution = progressionEstimation::plot_progression_rates(s_pneumoniae_poisson_output_df,
+                                                                           unit_time= "year",
+                                                                           type_name= "Serotype")
 
 #### model comparison
 ## Bayes Factors are calculated using marginal likelihoods, which involves directly sampling from the prior. (bridgesampling package in Stan)

@@ -1,0 +1,179 @@
+### need to reinstall packages after upgrading R
+install.packages(c("readxl", "imputeTS", "tidyverse", "magrittr", "rstan", 
+                   "bridgesampling", "loo", "cowplot", "ggrepel", "xlsx", 
+                   "roxygen2", "ggpubr", "gridExtra", "dplyr"))
+library(readxl)
+library(progressionEstimation)
+library(imputeTS)
+require(tidyverse)
+require(magrittr)
+require(rstan)
+require(bridgesampling)
+require(loo)
+require(cowplot)
+require(ggrepel)
+require(xlsx)
+require(roxygen2)
+library(ggpubr) # for multiple ggplot
+library(gridExtra) # for multiple ggplot
+library(dplyr)
+
+### function
+plot_ordered_population_scale_factors <- function(model_output_df) {
+  if (!("carriage_prediction" %in% colnames(model_output_df))) {
+    stop("Need to include model output in data frame for plotting")
+  }
+  
+  model_output_df %<>%
+    dplyr::group_by(study) %>%
+    dplyr::slice_head(n=1) %>%
+    dplyr::ungroup()
+  
+  ggplot(model_output_df,
+         aes(x = reorder(study, -gamma), y = gamma, ymin = gamma_lower, ymax = gamma_upper)) +
+    geom_point() +
+    geom_errorbar() +
+    ylab(paste0("Population scale factor")) +
+    xlab("Population") +
+    scale_y_continuous(trans = "log10") +
+    theme_bw() +
+    theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+}
+
+plot_ordered_progression_rates <- function(model_output_df, type = "type", unit_time = "unit time", type_name = "type",
+                                           colour_col = NULL, colour_palette = NULL, use_sample_size = FALSE) {
+  if (!(any(grepl("nu",colnames(model_output_df))))) {
+    stop("Need to include model output in data frame for plotting")
+  }
+  progression_rate_values <- c("nu", "nu_lower", "nu_upper")
+  if (type == "strain" & "secondary_nu" %in% colnames(model_output_df)) {
+    progression_rate_values <- paste0("secondary_", progression_rate_values)
+  }
+  y_label_text = paste0("Progression rate (disease per carrier per ",unit_time,")")
+  if ("secondary_nu" %in% colnames(model_output_df)) {
+    y_label_text = paste0("Progression rate contribution (disease per carrier per ",unit_time,")")
+  }
+  
+  if (use_sample_size) {
+    model_output_df %<>%
+      dplyr::group_by(!!! dplyr::syms(type)) %>%
+      dplyr::mutate(num_observations = sum(carriage+disease)) %>%
+      dplyr::ungroup()
+  }
+  
+  model_output_df %<>%
+    dplyr::group_by(!!! dplyr::syms(type)) %>%
+    dplyr::slice_head(n=1) %>%
+    dplyr::ungroup()
+  
+  if (is.null(colour_col)) {
+    if (use_sample_size) {
+      base_graph <-
+        ggplot(model_output_df,
+               aes(x = reorder(get(!!type), -get(progression_rate_values[1])),
+                   y = get(progression_rate_values[1]),
+                   ymin = get(progression_rate_values[2]),
+                   ymax = get(progression_rate_values[3]),
+                   shape = num_observations))
+    } else {
+      base_graph <-
+        ggplot(model_output_df,
+               aes(x = reorder(get(!!type), -get(progression_rate_values[1])),
+                   y = get(progression_rate_values[1]),
+                   ymin = get(progression_rate_values[2]),
+                   ymax = get(progression_rate_values[3])))
+    }
+  } else {
+    if (use_sample_size) {
+      base_graph <-
+        ggplot(model_output_df,
+               aes(x = reorder(get(!!type), -get(progression_rate_values[1])),
+                   y = get(progression_rate_values[1]),
+                   ymin = get(progression_rate_values[2]),
+                   ymax = get(progression_rate_values[3]),
+                   colour = get(colour_col),
+                   fill = get(colour_col),
+                   shape = num_observations))
+    } else {
+      base_graph <-
+        ggplot(model_output_df,
+               aes(x = reorder(get(!!type), -get(progression_rate_values[1])),
+                   y = get(progression_rate_values[1]),
+                   ymin = get(progression_rate_values[2]),
+                   ymax = get(progression_rate_values[3]),
+                   colour = get(colour_col),
+                   fill = get(colour_col)))
+    }
+  }
+  
+  point_graph <-
+    base_graph +
+    geom_point() +
+    geom_errorbar() +
+    ylab(y_label_text) +
+    xlab(type_name) +
+    scale_y_continuous(trans ="log10") +
+    theme_bw()
+  
+  if (!is.null(colour_col) & !is.null(colour_palette)) {
+    point_graph <- point_graph +
+      scale_colour_manual(values = colour_palette,
+                          name = colour_col) +
+      scale_fill_manual(values = colour_palette,
+                        name = colour_col) +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+            legend.position = "bottom")
+  } else if (!is.null(colour_col)) {
+    point_graph <- point_graph +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5),
+            legend.position = "bottom")
+  } else {
+    point_graph <- point_graph +
+      theme(axis.text.x = element_text(angle = 90, hjust = 1, vjust = 0.5))
+  }
+  
+  if (use_sample_size) {
+    point_graph <- point_graph +
+      scale_shape_binned(name = "Number of\nisolates",
+                         breaks = c(5,10,25,50,100))
+  }
+  
+  return(point_graph)
+}
+### load model fit
+setwd("/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_rdata")
+load("serotype_gpsc_only_BIM.RData")
+load("serotype_gpsc_BIM.RData")
+
+
+s_pneumoniae_poisson_serotypebased_gpscadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_serobased_gpsc_adjust_fit, 
+                                                                                                                             BIM_sero_gpsc_input,
+                                                                                                                             strain_as_secondary_type = TRUE)
+
+write.table(s_pneumoniae_poisson_serotypebased_gpscadjusted_output_df, 
+            file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/03_serotype_based_GPSC_adjusted/s_pneumoniae_poisson_serotypebased_gpscadjusted_output_df.txt", 
+            sep="\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
+
+case_carrier_pred_serotypebased_gpscadjusted = progressionEstimation::plot_case_carrier_predictions(s_pneumoniae_poisson_serotypebased_gpscadjusted_output_df , n_label = 3)
+
+serotype_prate_serotypebased_gpscadjusted = plot_ordered_progression_rates(s_pneumoniae_poisson_serotypebased_gpscadjusted_output_df,
+                                                                                            type="type",
+                                                                                            unit_time= "year",
+                                                                                            type_name= "Serotype")
+
+popfactor_serotypebased_gpscadjusted = plot_ordered_population_scale_factors(s_pneumoniae_poisson_serotypebased_gpscadjusted_output_df)
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/03_serotype_based_GPSC_adjusted/case_carrier_pred_serotypebased_gpscadjusted.pdf", width=16, height = 8)
+case_carrier_pred_serotypebased_gpscadjusted
+dev.off()
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/03_serotype_based_GPSC_adjusted/serotype_prate_serotypebased_gpscadjusted.pdf", width=16, height = 8)
+serotype_prate_serotypebased_gpscadjusted
+dev.off()
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/03_serotype_based_GPSC_adjusted/popfactor_serotypebased_gpscadjusted .pdf", width=16, height = 8)
+popfactor_serotypebased_gpscadjusted 
+dev.off()
+
+
+
