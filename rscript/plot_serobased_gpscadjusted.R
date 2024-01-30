@@ -140,11 +140,80 @@ plot_ordered_progression_rates <- function(model_output_df, type = "type", unit_
   
   return(point_graph)
 }
+### read BIM input
+BIM_sero_gpsc_input <- read.table("/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_gpsc_input.txt", 
+                                  header = TRUE, sep = "\t", stringsAsFactors = TRUE)
+
+BIM_sero_gpsc_input$strain <- as.factor(BIM_sero_gpsc_input$strain)
+
+BIM_sero_variant_input <- read.table("/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_variant_input.txt",
+                                     header = TRUE, sep = "\t", stringsAsFactors = TRUE)
+BIM_sero_variant_input$type <- as.factor(BIM_sero_variant_input$type)
+
 ### load model fit
 setwd("/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_rdata")
 load("serotype_gpsc_only_BIM.RData")
 load("serotype_gpsc_BIM.RData")
+load("gpsc_BIM.RData")
+load("variantbased_nopopadjusted.RData")
+load("variant_only_BIM.RData")
 
+### variant based output
+s_pneumoniae_poisson_variantbased_nopopadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_variantbased_nopopadjusted_fit, 
+                                                                                                         BIM_sero_variant_input,
+                                                                                                         type = "type",
+                                                                                                         strain_as_primary_type = FALSE,
+                                                                                                         strain_as_secondary_type = FALSE, 
+                                                                                                         condense = TRUE)
+write.table(s_pneumoniae_poisson_variantbased_nopopadjusted_output_df, 
+            file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/05_variant_based/s_pneumoniae_poisson_variantbased_nopopadjusted_output_df.txt", 
+            sep="\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
+
+case_carrier_pred_variantbased_nopopadjusted = progressionEstimation::plot_case_carrier_predictions(s_pneumoniae_poisson_variantbased_nopopadjusted_output_df , n_label = 3)
+
+variantbased_nopopadjusted_prate = plot_ordered_progression_rates(s_pneumoniae_poisson_variantbased_nopopadjusted_output_df,
+                                                                           type="type",
+                                                                           unit_time= "year",
+                                                                           type_name= "variant")
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/05_variant_based/case_carrier_pred_variantbased_nopopadjusted.pdf", width=16, height = 8)
+case_carrier_pred_variantbased_nopopadjusted
+dev.off()
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/05_variant_based/variantbased_nopopadjusted_prate.pdf", width=16, height = 8)
+variantbased_nopopadjusted_prate
+dev.off()
+
+### GPSC based output
+s_pneumoniae_poisson_gpscbased_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_gpsc_fit, 
+                                                                                                         BIM_sero_gpsc_input,
+                                                                                                         type = "strain",
+                                                                                                         strain_as_primary_type = FALSE,
+                                                                                                         strain_as_secondary_type = FALSE, 
+                                                                                                         condense = TRUE)
+                                                                                                         
+write.table(s_pneumoniae_poisson_gpscbased_output_df, 
+            file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/02_GPSC_based/s_pneumoniae_poisson_gpscbased_output_df.txt", 
+            sep="\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
+
+case_carrier_pred_gpscbased = progressionEstimation::plot_case_carrier_predictions(s_pneumoniae_poisson_gpscbased_output_df , n_label = 3, label_col = "strain")
+
+gpscbased_prate = plot_ordered_progression_rates(s_pneumoniae_poisson_gpscbased_output_df,
+                                                                  type="strain",
+                                                                  unit_time= "year",
+                                                                  type_name= "GPSC")
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/02_GPSC_based/case_carrier_pred_gpscbased.pdf", width=16, height = 8)
+case_carrier_pred_gpscbased
+dev.off()
+
+pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/02_GPSC_based/gpscbased_prate.pdf", width=16, height = 8)
+gpscbased_prate
+dev.off()
+
+
+
+### serotypebased gpscadjusted
 
 s_pneumoniae_poisson_serotypebased_gpscadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_serobased_gpsc_adjust_fit, 
                                                                                                                              BIM_sero_gpsc_input,
@@ -175,5 +244,23 @@ pdf(file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_out
 popfactor_serotypebased_gpscadjusted 
 dev.off()
 
+### model selection
+# In this table, each row is a different model, ordered from the best-fitting at the top, to the worst-fitting at the bottom. This is based on the expected log pointwise predictive density (ELPD) for each model. The difference between  models is calculated in the *elpd_diff* column; negative values indicate worse fits. The standard error of the ELPD values across a model is given by the *se_diff* column; all of these values are relative to the best-fitting model. One model can be regarded as outperforming another when *elpd_diff* is greater than four, and larger than the corresponding *se_diff*. Here we can conclude that best-fitting model is that with type-specific progression rates; that is, there are significant differences in progression rates between serotypes.
+# These processing commands also specify `condense = FALSE` (the default for the function). This means that the division of the population will replicate that in the rows of the input data. This is necessary for comparing models where progression rates are determined by different characteristics, because cross-validation requires the same number of data points in each compared model. However, `condense = TRUE` will collapse all entries for the same categorisation; e.g. if `type = 'serotype'`, then all duplicated entries of serotype belonging to the same study would be combined into a single entry. This would be necessary if appending this dataset to a wider dataset in which only serotype, and not strain, were known
+
+s_pneumoniae_poisson_variantbased_fit@model_name <- "s_pneumoniae_poisson_variantbased_fit"
+s_pneumoniae_poisson_variantbased_nopopadjusted_fit@model_name <- "s_pneumoniae_poisson_variantbased_nopopadjusted_fit"
+
+loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit)) 
+loo_res %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
+write.table(loo_res, "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/05_variant_based/s_pneumoniae_poisson_variantbased_loo_res.txt", 
+         sep="\t", quote = FALSE, row.names = FALSE)
+
+loo_res_disease <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit), 
+                                                              log_lik_param = "disease_log_lik") %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
 
 

@@ -324,6 +324,11 @@ sero_variant_input_data_list <- metadata_to_BIM_imput(GPS_Bayes_selec_candidate_
                                                       pair_colname1 = "In_Silico_serotype", pair_colname2 = "GATTATAATGTTACACCGAATTTTGTAGACC", 
                                                       BIM_colnames = c("study", "type", "carriage", "disease","carriage_samples", "surveillance_population", "time_interval", "variant", "pair_name"))
 BIM_sero_variant_input <- sero_variant_input_data_list$BIM_Input_table  # type: serotype ; strain: variant
+write.table(BIM_sero_gpsc_input, "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_gpsc_input.txt",
+            sep = "\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
+write.table(BIM_sero_variant_input, "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_variant_input.txt",
+            sep = "\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
+
 ## run BIM -------------------------------------------------
 
 ### run serotype-based gpsc-adjustedPoisson Bayesian model
@@ -403,8 +408,25 @@ s_pneumoniae_poisson_variantbased_fit <- progressionEstimation::fit_progression_
                                                                                                             num_chains = 2,
                                                                                                             num_iter = 1e4)
 
+### run variant based no-pop-adjusted Poisson Bayesian model
+colnames(BIM_sero_variant_input) <- c("study", "serotype", "carriage", "disease", "carriage_samples", "surveillance_population", "time_interval", "type")
+s_pneumoniae_variantbased_data <- progressionEstimation::process_input_data(BIM_sero_variant_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = TRUE)
+s_pneumoniae_poisson_variantbased_nopopadjusted_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_variantbased_data,
+                                                                                           type_specific = TRUE,
+                                                                                           location_adjustment = FALSE,
+                                                                                           stat_model = "poisson",
+                                                                                           strain_as_primary_type = FALSE,
+                                                                                           strain_as_secondary_type = FALSE,
+                                                                                           num_chains = 2,
+                                                                                           num_iter = 1e4)
+
+save(s_pneumoniae_variantbased_data, s_pneumoniae_poisson_variantbased_nopopadjusted_fit, 
+     file = "variantbased_nopopadjusted.RData")
+
 save(s_pneumoniae_sero_gpsc_data, s_pneumoniae_poisson_serobased_gpsc_adjust_fit,
      s_pneumoniae_gpsc_sero_data, s_pneumoniae_poisson_gpscbased_seroadjust_fit,file = "serotype_gpsc_BIM.RData")
+
+save(s_pneumoniae_gpsc_data, s_pneumoniae_poisson_gpsc_fit, file = "gpsc_BIM.RData")
 
 save(s_pneumoniae_sero_data, s_pneumoniae_poisson_sero_fit,
      s_pneumoniae_gpsc_data, s_pneumoniae_poisson_gpsc_fit, file = "serotype_gpsc_only_BIM.RData")
