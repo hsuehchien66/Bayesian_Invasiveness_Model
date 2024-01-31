@@ -363,7 +363,7 @@ s_pneumoniae_poisson_gpsc_fit <- progressionEstimation::fit_progression_rate_mod
                                                                                                     num_iter = 1e4)
 
 ### run serotype based Poisson Bayesian model
-s_pneumoniae_sero_data <- progressionEstimation::process_input_data(BIM_sero_gpsc_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = TRUE)
+s_pneumoniae_sero_data <- progressionEstimation::process_input_data(BIM_sero_gpsc_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = FALSE)
 s_pneumoniae_poisson_sero_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_sero_data,
                                                                                    type_specific = TRUE,
                                                                                    location_adjustment = TRUE,
@@ -398,7 +398,7 @@ s_pneumoniae_poisson_variantbased_serotypeadjusted_fit <- progressionEstimation:
 
 ### run variant based Poisson Bayesian model
 colnames(BIM_sero_variant_input) <- c("study", "serotype", "carriage", "disease", "carriage_samples", "surveillance_population", "time_interval", "type")
-s_pneumoniae_variantbased_data <- progressionEstimation::process_input_data(BIM_sero_variant_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = TRUE)
+s_pneumoniae_variantbased_data <- progressionEstimation::process_input_data(BIM_sero_variant_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = FALSE)
 s_pneumoniae_poisson_variantbased_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_variantbased_data,
                                                                                                             type_specific = TRUE,
                                                                                                             location_adjustment = TRUE,
@@ -434,7 +434,7 @@ save(s_pneumoniae_sero_data, s_pneumoniae_poisson_sero_fit,
 save(s_pneumoniae_serobased_variantadjusted_data, s_pneumoniae_poisson_serobased_variantadjusted_fit,
      file = "serotype_gpsc_BIM.RData")
 
-save(s_pneumoniae_variantbased_data, s_pneumoniae_poisson_variantbased_fit, BIM_sero_variant_input,
+save(s_pneumoniae_variantbased_data, s_pneumoniae_poisson_variantbased_fit,
      file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_rdata/variant_only_BIM.RData")
 ### model comparison ----------------------------
 

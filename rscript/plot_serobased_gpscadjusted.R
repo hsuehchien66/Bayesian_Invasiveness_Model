@@ -157,6 +157,8 @@ load("serotype_gpsc_BIM.RData")
 load("gpsc_BIM.RData")
 load("variantbased_nopopadjusted.RData")
 load("variant_only_BIM.RData")
+load("s_pneumoniae_serobased_v.RData")
+load("serotype_variant_BIM.RData")
 
 ### variant based output
 s_pneumoniae_poisson_variantbased_nopopadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_variantbased_nopopadjusted_fit, 
@@ -245,11 +247,17 @@ popfactor_serotypebased_gpscadjusted
 dev.off()
 
 ### model selection
+
+### LOO-CV can't be done using different input data
+### Bayes factor can't be done using loading Rdata
 # In this table, each row is a different model, ordered from the best-fitting at the top, to the worst-fitting at the bottom. This is based on the expected log pointwise predictive density (ELPD) for each model. The difference between  models is calculated in the *elpd_diff* column; negative values indicate worse fits. The standard error of the ELPD values across a model is given by the *se_diff* column; all of these values are relative to the best-fitting model. One model can be regarded as outperforming another when *elpd_diff* is greater than four, and larger than the corresponding *se_diff*. Here we can conclude that best-fitting model is that with type-specific progression rates; that is, there are significant differences in progression rates between serotypes.
 # These processing commands also specify `condense = FALSE` (the default for the function). This means that the division of the population will replicate that in the rows of the input data. This is necessary for comparing models where progression rates are determined by different characteristics, because cross-validation requires the same number of data points in each compared model. However, `condense = TRUE` will collapse all entries for the same categorisation; e.g. if `type = 'serotype'`, then all duplicated entries of serotype belonging to the same study would be combined into a single entry. This would be necessary if appending this dataset to a wider dataset in which only serotype, and not strain, were known
 
 s_pneumoniae_poisson_variantbased_fit@model_name <- "s_pneumoniae_poisson_variantbased_fit"
 s_pneumoniae_poisson_variantbased_nopopadjusted_fit@model_name <- "s_pneumoniae_poisson_variantbased_nopopadjusted_fit"
+s_pneumoniae_poisson_gpsc_fit@model_name <- "s_pneumoniae_poisson_gpscbased_fit"
+s_pneumoniae_poisson_serobased_v_fit@model_name <- "s_pneumoniae_poisson_serobased_fit"
+s_pneumoniae_poisson_serobased_variantadjusted_fit@model_name <- "s_pneumoniae_poisson_serobased_variantadjusted_fit"
 
 loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit)) 
 loo_res %>%
@@ -263,4 +271,21 @@ loo_res_disease <- progressionEstimation::compare_model_fits_with_loo(list(s_pne
   kableExtra::kable() %>%
   kableExtra::kable_styling(latex_options = "scale_down")
 
+loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit)) 
+loo_res %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
 
+loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit, s_pneumoniae_poisson_serobased_variantadjusted_fit)) 
+loo_res %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
+
+
+
+
+### using bayes factor
+variant_vs_gpsc_comparison <- progressionEstimation::compare_model_fits_with_bf(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit))
+  dplyr::rename("log(Bayes Factor)" = log_Bayes_factor) %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
