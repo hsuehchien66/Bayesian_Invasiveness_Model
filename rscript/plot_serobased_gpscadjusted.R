@@ -256,34 +256,72 @@ dev.off()
 # In this table, each row is a different model, ordered from the best-fitting at the top, to the worst-fitting at the bottom. This is based on the expected log pointwise predictive density (ELPD) for each model. The difference between  models is calculated in the *elpd_diff* column; negative values indicate worse fits. The standard error of the ELPD values across a model is given by the *se_diff* column; all of these values are relative to the best-fitting model. One model can be regarded as outperforming another when *elpd_diff* is greater than four, and larger than the corresponding *se_diff*. Here we can conclude that best-fitting model is that with type-specific progression rates; that is, there are significant differences in progression rates between serotypes.
 # These processing commands also specify `condense = FALSE` (the default for the function). This means that the division of the population will replicate that in the rows of the input data. This is necessary for comparing models where progression rates are determined by different characteristics, because cross-validation requires the same number of data points in each compared model. However, `condense = TRUE` will collapse all entries for the same categorisation; e.g. if `type = 'serotype'`, then all duplicated entries of serotype belonging to the same study would be combined into a single entry. This would be necessary if appending this dataset to a wider dataset in which only serotype, and not strain, were known
 
-s_pneumoniae_poisson_variantbased_fit@model_name <- "s_pneumoniae_poisson_variantbased_fit"
+s_pneumoniae_poisson_variantbased_fit@model_name <- "Variant-based"
 s_pneumoniae_poisson_variantbased_nopopadjusted_fit@model_name <- "s_pneumoniae_poisson_variantbased_nopopadjusted_fit"
 s_pneumoniae_poisson_gpsc_fit@model_name <- "s_pneumoniae_poisson_gpscbased_fit"
-s_pneumoniae_poisson_serobased_v_fit@model_name <- "s_pneumoniae_poisson_serobased_fit"
-s_pneumoniae_poisson_serobased_variantadjusted_fit@model_name <- "s_pneumoniae_poisson_serobased_variantadjusted_fit"
-s_pneumoniae_poisson_gpscbased_v_fit@model_name <- "s_pneumoniae_poisson_gpscbased_v_fit"
-s_pneumoniae_poisson_variantbased_g_fit@model_name <- "s_pneumoniae_poisson_variantbased_g_fit"
-s_pneumoniae_poisson_gpscbased_variantadjusted_fit@model_name <- "s_pneumoniae_poisson_gpscbased_variantadjusted_fit"
+s_pneumoniae_poisson_serobased_v_fit@model_name <- "Serotype-based"
+s_pneumoniae_poisson_serobased_variantadjusted_fit@model_name <- "Serotype-based Variant-adjusted"
+s_pneumoniae_poisson_gpscbased_v_fit@model_name <- "GPSC-based"
+s_pneumoniae_poisson_variantbased_g_fit@model_name <- "Variant_based"
+s_pneumoniae_poisson_gpscbased_variantadjusted_fit@model_name <- "GPSC-based Variant-adjusted"
+s_pneumoniae_poisson_gpsc_fit@model_name <- "GPSC-based"
+s_pneumoniae_poisson_sero_fit@model_name <- "Serotype-based"
+s_pneumoniae_poisson_gpscbased_seroadjust_fit@model_name <- "GPSC-based Serotype-adjusted"
+s_pneumoniae_poisson_serobased_gpsc_adjust_fit@model_name <- "Serotype-based GPSC-adjusted"
 
+# Serotype v.s. GPSC
+## Cross-Validation
+Sero_GPSC_loo_loglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpsc_fit, s_pneumoniae_poisson_sero_fit
+                                                                                ), 
+                                                                          log_lik_param = "log_lik") 
 
-loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit)) 
-loo_res %>%
+# Serotype v.s. Variant
+## Cross-Validation
+Sero_Var_loo_loglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit, s_pneumoniae_poisson_serobased_variantadjusted_fit), 
+                                                                       log_lik_param = "log_lik") 
+Sero_Var_loo_loglik %>%
   kableExtra::kable() %>%
   kableExtra::kable_styling(latex_options = "scale_down")
 
-loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit, s_pneumoniae_poisson_serobased_variantadjusted_fit)) 
-loo_res %>%
+write.table(Sero_Var_loo_loglik, file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/CV_Serotype_vs_Variant.txt", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+Sero_Var_loo_disloglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit, s_pneumoniae_poisson_serobased_variantadjusted_fit), 
+                                                                          log_lik_param = "disease_log_lik") 
+Sero_Var_loo_disloglik %>%
   kableExtra::kable() %>%
   kableExtra::kable_styling(latex_options = "scale_down")
 
-loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpscbased_v_fit, s_pneumoniae_poisson_gpscbased_variantadjusted_fit, s_pneumoniae_poisson_variantbased_g_fit)) 
-loo_res %>%
+write.table(Sero_Var_loo_loglik, file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/Sero_Var_loo_disloglik.txt", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+
+# GPSC v.s. Variant
+## Cross-Validation
+
+GPSC_Var_loo_loglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpscbased_v_fit, s_pneumoniae_poisson_gpscbased_variantadjusted_fit, s_pneumoniae_poisson_variantbased_g_fit), 
+                                                                          log_lik_param = "log_lik") 
+GPSC_Var_loo_loglik %>%
   kableExtra::kable() %>%
   kableExtra::kable_styling(latex_options = "scale_down")
 
+write.table(GPSC_Var_loo_loglik, file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/GPSC_Var_loo_loglik.txt", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+GPSC_Var_loo_disloglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpscbased_v_fit, s_pneumoniae_poisson_gpscbased_variantadjusted_fit, s_pneumoniae_poisson_variantbased_g_fit), 
+                                                                          log_lik_param = "disease_log_lik") 
+
+GPSC_Var_loo_disloglik %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
+
+write.table(GPSC_Var_loo_disloglik, file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/GPSC_Var_loo_disloglik.txt", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
+# Serotype vs. GPSC
+Sero_GPSC_loo_loglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae, s_pneumoniae_poisson_gpscbased_variantadjusted_fit, s_pneumoniae_poisson_variantbased_g_fit), 
+                                                                          log_lik_param = "log_lik") 
 
 ### using bayes factor
 # can't be done when loading
+# check https://github.com/quentingronau/bridgesampling/issues/7
+
 variant_vs_gpsc_comparison <- progressionEstimation::compare_model_fits_with_bf(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit))
   dplyr::rename("log(Bayes Factor)" = log_Bayes_factor) %>%
   kableExtra::kable() %>%

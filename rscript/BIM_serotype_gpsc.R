@@ -319,7 +319,8 @@ carriage_rate_df = as.data.frame(carriage_rate_file)
 #---------------------------------------------------------------
 input_data_list <- metadata_to_BIM_imput(GPS_Bayes_selec_candidate_variant_top1, carriage_rate_df)
 BIM_sero_gpsc_input <- input_data_list$BIM_Input_table
-
+#BIM_sero_gpsc_input <- read.table("/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_gpsc_input.txt", sep = "\t", header = T, stringsAsFactors = T)
+#BIM_sero_gpsc_input$strain <- as.factor(BIM_sero_gpsc_input$strain)
 sero_variant_input_data_list <- metadata_to_BIM_imput(GPS_Bayes_selec_candidate_variant_top1, carriage_rate_df, 
                                                       pair_colname1 = "In_Silico_serotype", pair_colname2 = "GATTATAATGTTACACCGAATTTTGTAGACC", 
                                                       BIM_colnames = c("study", "type", "carriage", "disease","carriage_samples", "surveillance_population", "time_interval", "variant", "pair_name"))
