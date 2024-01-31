@@ -259,17 +259,6 @@ s_pneumoniae_poisson_gpsc_fit@model_name <- "s_pneumoniae_poisson_gpscbased_fit"
 s_pneumoniae_poisson_serobased_v_fit@model_name <- "s_pneumoniae_poisson_serobased_fit"
 s_pneumoniae_poisson_serobased_variantadjusted_fit@model_name <- "s_pneumoniae_poisson_serobased_variantadjusted_fit"
 
-loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit)) 
-loo_res %>%
-  kableExtra::kable() %>%
-  kableExtra::kable_styling(latex_options = "scale_down")
-write.table(loo_res, "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/05_variant_based/s_pneumoniae_poisson_variantbased_loo_res.txt", 
-         sep="\t", quote = FALSE, row.names = FALSE)
-
-loo_res_disease <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit), 
-                                                              log_lik_param = "disease_log_lik") %>%
-  kableExtra::kable() %>%
-  kableExtra::kable_styling(latex_options = "scale_down")
 
 loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit)) 
 loo_res %>%
@@ -285,6 +274,7 @@ loo_res %>%
 
 
 ### using bayes factor
+# can't be done when loading
 variant_vs_gpsc_comparison <- progressionEstimation::compare_model_fits_with_bf(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_variantbased_nopopadjusted_fit))
   dplyr::rename("log(Bayes Factor)" = log_Bayes_factor) %>%
   kableExtra::kable() %>%
