@@ -371,9 +371,7 @@ s_pneumoniae_poisson_gpsc_fit <- progressionEstimation::fit_progression_rate_mod
                                                                                                     stat_model = "poisson",
                                                                                                     strain_as_primary_type = FALSE,
                                                                                                     strain_as_secondary_type = FALSE,
-                                                                                                    num_chains = 2,
-                 
-                                                                                                                                                                   num_iter = 1e4)
+                                                                                                    num_chains = 2,num_iter = 1e4)
 save(s_pneumoniae_gpsc_data, s_pneumoniae_poisson_gpsc_fit,file = "GPSC_s_BIM.RData")
 ### run serotype based Poisson Bayesian model
 s_pneumoniae_sero_data <- progressionEstimation::process_input_data(BIM_sero_gpsc_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = FALSE)
@@ -385,6 +383,19 @@ s_pneumoniae_poisson_sero_fit <- progressionEstimation::fit_progression_rate_mod
                                                                                    strain_as_secondary_type = FALSE,
                                                                                    num_chains = 2,
                                                                                    num_iter = 1e4)
+save(s_pneumoniae_sero_data, s_pneumoniae_poisson_sero_fit,file = "Serotype_g_BIM.RData")
+
+
+s_pneumoniae_poisson_gpsc_fit@model_name <- "GPSC-based"
+s_pneumoniae_poisson_sero_fit@model_name <- "Serotype-based"
+Sero_GPSC_loo_loglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpsc_fit, s_pneumoniae_poisson_sero_fit), 
+                                                                          log_lik_param = "log_lik") 
+Sero_GPSC_loo_loglik %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
+
+write.table(Sero_GPSC_loo_loglik, file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/Sero_GPSC_loo_loglik.txt", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
+
 
 ### run serotype based variant adjusted Poisson Bayesian model
 s_pneumoniae_serobased_variantadjusted_data <- progressionEstimation::process_input_data(BIM_sero_variant_input, type = "type", use_strain = TRUE, combine_strain = FALSE, condense = FALSE)
