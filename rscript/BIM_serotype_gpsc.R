@@ -352,7 +352,7 @@ s_pneumoniae_poisson_gpscbased_seroadjust_fit <- progressionEstimation::fit_prog
                                                                                                     num_chains = 2,
                                                                                                     num_iter = 1e4)
 ### run gpsc based Poisson Bayesian model
-s_pneumoniae_gpsc_data <- progressionEstimation::process_input_data(BIM_sero_gpsc_input, type = "strain", use_strain = FALSE, combine_strain = FALSE, condense = TRUE)
+s_pneumoniae_gpsc_data <- progressionEstimation::process_input_data(BIM_sero_gpsc_input, type = "strain", use_strain = FALSE, combine_strain = FALSE, condense = FALSE)
 s_pneumoniae_poisson_gpsc_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_gpsc_data,
                                                                                                     type_specific = TRUE,
                                                                                                     location_adjustment = TRUE,
