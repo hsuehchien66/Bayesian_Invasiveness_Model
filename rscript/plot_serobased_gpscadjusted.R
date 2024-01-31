@@ -162,6 +162,8 @@ load("serotype_variant_BIM.RData")
 load("s_pneumoniae_variantbased_g.RData")
 load("s_pneumoniae_gpscbased_v.RData")
 load("s_pneumoniae_gpscbased_variantadjusted.RData")
+load("GPSC_s_BIM.RData")
+load("Serotype_g_BIM.RData")
 
 ### variant based output
 s_pneumoniae_poisson_variantbased_nopopadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_variantbased_nopopadjusted_fit, 
@@ -269,11 +271,18 @@ s_pneumoniae_poisson_sero_fit@model_name <- "Serotype-based"
 s_pneumoniae_poisson_gpscbased_seroadjust_fit@model_name <- "GPSC-based Serotype-adjusted"
 s_pneumoniae_poisson_serobased_gpsc_adjust_fit@model_name <- "Serotype-based GPSC-adjusted"
 
+
 # Serotype v.s. GPSC
 ## Cross-Validation
-Sero_GPSC_loo_loglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpsc_fit, s_pneumoniae_poisson_sero_fit
-                                                                                ), 
+Sero_GPSC_loo_loglik <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpsc_fit, s_pneumoniae_poisson_sero_fit,
+                                                                                s_pneumoniae_poisson_gpscbased_seroadjust_fit, s_pneumoniae_poisson_serobased_gpsc_adjust_fit), 
                                                                           log_lik_param = "log_lik") 
+
+Sero_GPSC_loo_loglik %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
+
+write.table(Sero_GPSC_loo_loglik, file = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_output_results/Sero_GPSC_loo_loglik.txt", sep = "\t", quote = FALSE, row.names = FALSE, col.names = TRUE)
 
 # Serotype v.s. Variant
 ## Cross-Validation
