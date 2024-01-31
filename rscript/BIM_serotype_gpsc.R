@@ -372,8 +372,9 @@ s_pneumoniae_poisson_gpsc_fit <- progressionEstimation::fit_progression_rate_mod
                                                                                                     strain_as_primary_type = FALSE,
                                                                                                     strain_as_secondary_type = FALSE,
                                                                                                     num_chains = 2,
-                                                                                                    num_iter = 1e4)
-
+                 
+                                                                                                                                                                   num_iter = 1e4)
+save(s_pneumoniae_gpsc_data, s_pneumoniae_poisson_gpsc_fit,file = "GPSC_s_BIM.RData")
 ### run serotype based Poisson Bayesian model
 s_pneumoniae_sero_data <- progressionEstimation::process_input_data(BIM_sero_gpsc_input, type = "type", use_strain = FALSE, combine_strain = FALSE, condense = FALSE)
 s_pneumoniae_poisson_sero_fit <- progressionEstimation::fit_progression_rate_model(input_data = s_pneumoniae_sero_data,
