@@ -159,6 +159,9 @@ load("variantbased_nopopadjusted.RData")
 load("variant_only_BIM.RData")
 load("s_pneumoniae_serobased_v.RData")
 load("serotype_variant_BIM.RData")
+load("s_pneumoniae_variantbased_g.RData")
+load("s_pneumoniae_gpscbased_v.RData")
+load("s_pneumoniae_gpscbased_variantadjusted.RData")
 
 ### variant based output
 s_pneumoniae_poisson_variantbased_nopopadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_variantbased_nopopadjusted_fit, 
@@ -258,6 +261,9 @@ s_pneumoniae_poisson_variantbased_nopopadjusted_fit@model_name <- "s_pneumoniae_
 s_pneumoniae_poisson_gpsc_fit@model_name <- "s_pneumoniae_poisson_gpscbased_fit"
 s_pneumoniae_poisson_serobased_v_fit@model_name <- "s_pneumoniae_poisson_serobased_fit"
 s_pneumoniae_poisson_serobased_variantadjusted_fit@model_name <- "s_pneumoniae_poisson_serobased_variantadjusted_fit"
+s_pneumoniae_poisson_gpscbased_v_fit@model_name <- "s_pneumoniae_poisson_gpscbased_v_fit"
+s_pneumoniae_poisson_variantbased_g_fit@model_name <- "s_pneumoniae_poisson_variantbased_g_fit"
+s_pneumoniae_poisson_gpscbased_variantadjusted_fit@model_name <- "s_pneumoniae_poisson_gpscbased_variantadjusted_fit"
 
 
 loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_variantbased_fit, s_pneumoniae_poisson_serobased_v_fit)) 
@@ -270,7 +276,10 @@ loo_res %>%
   kableExtra::kable() %>%
   kableExtra::kable_styling(latex_options = "scale_down")
 
-
+loo_res <- progressionEstimation::compare_model_fits_with_loo(list(s_pneumoniae_poisson_gpscbased_v_fit, s_pneumoniae_poisson_gpscbased_variantadjusted_fit, s_pneumoniae_poisson_variantbased_g_fit)) 
+loo_res %>%
+  kableExtra::kable() %>%
+  kableExtra::kable_styling(latex_options = "scale_down")
 
 
 ### using bayes factor
