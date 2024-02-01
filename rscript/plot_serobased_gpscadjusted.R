@@ -335,3 +335,16 @@ variant_vs_gpsc_comparison <- progressionEstimation::compare_model_fits_with_bf(
   dplyr::rename("log(Bayes Factor)" = log_Bayes_factor) %>%
   kableExtra::kable() %>%
   kableExtra::kable_styling(latex_options = "scale_down")
+  
+## plot cauchy distribution
+x_values <- seq(-5, 5, length.out=100)
+cauchy_pdf_values <- dcauchy(x_values, location=0, scale=0.5)
+normal_pdf_values <- dnorm(x_values, mean = 0, sd = 1)
+
+plot(x_values, cauchy_pdf_values, type = "l", col = "blue", lwd = 2,
+     main = "Cauchy Distribution", xlab = "x", ylab = "Density")
+lines(x_values, normal_pdf_values, col = "red", lwd = 2, lty = 2)
+
+legend("topright", legend = c("Cauchy", "Normal"), col = c("blue", "red"), lty = 1:2, lwd = 2)
+
+
