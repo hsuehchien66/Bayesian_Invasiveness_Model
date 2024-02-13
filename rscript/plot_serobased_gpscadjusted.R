@@ -165,10 +165,18 @@ load("s_pneumoniae_gpscbased_variantadjusted.RData")
 load("GPSC_s_BIM.RData")
 load("Serotype_g_BIM.RData")
 
+### serotype based output
+s_pneumoniae_poisson_serobased_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_serobased_v_fit, 
+                                                                                                                          BIM_sero_variant_input,
+                                                                                                                          type = "type",
+                                                                                                                          strain_as_primary_type = FALSE,
+                                                                                                                          strain_as_secondary_type = FALSE, 
+                                                                                                                          condense = FALSE)
+
 ### variant based output
 s_pneumoniae_poisson_variantbased_nopopadjusted_output_df <- progressionEstimation::process_progression_rate_model_output(s_pneumoniae_poisson_variantbased_nopopadjusted_fit, 
                                                                                                          BIM_sero_variant_input,
-                                                                                                         type = "type",
+                                                                                                         type = "strain",
                                                                                                          strain_as_primary_type = FALSE,
                                                                                                          strain_as_secondary_type = FALSE, 
                                                                                                          condense = TRUE)
