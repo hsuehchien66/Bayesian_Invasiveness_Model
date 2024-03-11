@@ -10,7 +10,6 @@ require(cowplot)
 require(ggrepel)
 require(xlsx)
 require(roxygen2)
-library(ggpubr) # for multiple ggplot
 library(gridExtra) # for multiple ggplot
 library(dplyr)
 # ------------------------------------------------------
@@ -381,19 +380,6 @@ get_median<-function(parameter,model) {
 ### Analysis
 ## Read data
 {
-  gene_path = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/gwas_res_lrtpvalue_sorted_unitigs_e04_pres_matched.rtab"
-  variant_pres = read.table(gene_path, header = T, row.names = 1, sep = "\t", comment.char = "$", check.names = F)
-  variant_pres = as.data.frame(t(variant_pres))
-  variant_pres <- variant_pres %>%
-    rownames_to_column(var = "RowName")
-  colnames(variant_pres)[1] = "Lane_id"
-  
-  # iga unitig: GATTATAATGTTACACCGAATTTTGTAGACC
-  iga_kmers <- "GATTATAATGTTACACCGAATTTTGTAGACC"
-  truA_kmers <- "GATTTTCATTGCCGTTATGCCAAGCATAGCA"
-  iga_unitig = variant_pres[,c("Lane_id", iga_kmers)]
-  truA_unitig <- variant_pres[, c("Lane_id", truA_kmers)]
-  
   # load GPS dataset
   GPS_path = "/Users/hc14/Documents/PhD_project/PhD_datasets/GPS/GPS1_database_v3.3_selected_row.xlsx"
   GPS_dataset = multiplesheets(GPS_path)
@@ -408,12 +394,10 @@ get_median<-function(parameter,model) {
   GPS_Bayes_selec = GPS_merge[,c("Lane_id","In_Silico_serotype", "GPSC_PoPUNK2", "Country.x", "Month_collection", "Year_collection", "Manifest_type")]
 }
 
-GPS_Bayes_selec_candidate_variant_top1 <- merge(GPS_Bayes_selec, iga_unitig, by="Lane_id")
-GPS_Bayes_selec_candidate_variants <- merge(GPS_Bayes_selec_candidate_variant_top1, truA_unitig, by="Lane_id")
 
-serotype_profile <- as.data.frame(table(GPS_Bayes_selec_candidate_variants$In_Silico_serotype))
-gpsc_profile <- as.data.frame(table(GPS_Bayes_selec_candidate_variants$GPSC_PoPUNK2))
-country_profile <- as.data.frame(table(GPS_Bayes_selec_candidate_variants$Country.x))
+serotype_profile <- as.data.frame(table(GPS_Bayes_selec$In_Silico_serotype))
+gpsc_profile <- as.data.frame(table(GPS_Bayes_selec$GPSC_PoPUNK2))
+country_profile <- as.data.frame(table(GPS_Bayes_selec$Country.x))
 
 carriage_rate_path = "/Users/hc14/Documents/PhD_project/PhD_datasets/GPS/GPS_carriage_rate.xlsx"
 carriage_rate_file = read_excel(carriage_rate_path)
@@ -424,134 +408,133 @@ carriage_rate_df = as.data.frame(carriage_rate_file)
 ## Country with realtively even counts of carrier and disease:
 ## South Africa, Malawi, The Gambia, Nepal, Peru, India
 
-SA_GPS <- GPS_Bayes_selec_candidate_variants[which(GPS_Bayes_selec_candidate_variants$Country.x == "SOUTH AFRICA"), ]
+SA_GPS <- GPS_Bayes_selec[which(GPS_Bayes_selec$Country.x == "SOUTH AFRICA"), ]
 SA_GPS <- SA_GPS[which(SA_GPS$Manifest_type == "Carriage" | SA_GPS$Manifest_type == "IPD"), ]
 
-Malawi_GPS <- GPS_Bayes_selec_candidate_variants[which(GPS_Bayes_selec_candidate_variants$Country.x == "MALAWI"), ]
+Malawi_GPS <- GPS_Bayes_selec[which(GPS_Bayes_selec$Country.x == "MALAWI"), ]
 Malawi_GPS <- Malawi_GPS[which(Malawi_GPS$Manifest_type == "Carriage" | Malawi_GPS$Manifest_type == "IPD"), ]
 
-Gambia_GPS <- GPS_Bayes_selec_candidate_variants[which(GPS_Bayes_selec_candidate_variants$Country.x == "THE GAMBIA"), ]
+Gambia_GPS <- GPS_Bayes_selec[which(GPS_Bayes_selec$Country.x == "THE GAMBIA"), ]
 Gambia_GPS <- Gambia_GPS[which(Gambia_GPS$Manifest_type == "Carriage" | Gambia_GPS$Manifest_type == "IPD"), ]
 
-Peru_GPS <- GPS_Bayes_selec_candidate_variants[which(GPS_Bayes_selec_candidate_variants$Country.x == "PERU"), ]
+Peru_GPS <- GPS_Bayes_selec[which(GPS_Bayes_selec$Country.x == "PERU"), ]
 Peru_GPS <- Peru_GPS[which(Peru_GPS$Manifest_type == "Carriage" | Peru_GPS$Manifest_type == "IPD"), ]
 
-Nepal_GPS <- GPS_Bayes_selec_candidate_variants[which(GPS_Bayes_selec_candidate_variants$Country.x == "NEPAL"), ]
+Nepal_GPS <- GPS_Bayes_selec[which(GPS_Bayes_selec$Country.x == "NEPAL"), ]
 Nepal_GPS <- Nepal_GPS[which(Nepal_GPS$Manifest_type == "Carriage" | Nepal_GPS$Manifest_type == "IPD"), ]
 
-India_GPS <- GPS_Bayes_selec_candidate_variants[which(GPS_Bayes_selec_candidate_variants$Country.x == "INDIA"), ]
+India_GPS <- GPS_Bayes_selec[which(GPS_Bayes_selec$Country.x == "INDIA"), ]
 India_GPS <- India_GPS[which(India_GPS$Manifest_type == "Carriage" | India_GPS$Manifest_type == "IPD"), ]
 
 curated_country <- c("SOUTH AFRICA", "MALAWI", "THE GAMBIA", "PERU", "NEPAL", "INDIA")
 ## 12414 isolates, 6 countries, 5417 carriages, 6997 IPD
 GPS_curated_table <- rbind(SA_GPS, Malawi_GPS, Gambia_GPS, Peru_GPS, Nepal_GPS, India_GPS)
-GPS_curated_table[which(GPS_curated_table$In_Silico_serotype == "SWISS_NT"), "In_Silico_serotype"] <- "SWISS"
-
-
 GPS_curated_carriagerate <- carriage_rate_df[which(carriage_rate_df$Country %in% curated_country), ]
 
 ### Generating input data ---------------------------------------------------------------
 ### Generating the dataframe with each row as a Population-Serotype-GPSC pair
 #---------------------------------------------------------------
-# serotype-iga pair
-serotype_iga_input_data_list <- metadata_to_BIM_imput(GPS_curated_table, GPS_curated_carriagerate, pair_colname1 = "In_Silico_serotype", pair_colname2 = iga_kmers)
-BIM_sero_iga_input <- serotype_iga_input_data_list$BIM_Input_table
-write.table(BIM_sero_iga_input, "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_iga_input.txt",
-            sep = "\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
-BIM_sero_iga_input <- read.table("BIM_sero_iga_input.txt", sep = "\t", header = TRUE)
-
-
-serotype_truA_input_data_list <- metadata_to_BIM_imput(GPS_curated_table, GPS_curated_carriagerate, pair_colname1 = "In_Silico_serotype", pair_colname2 = truA_kmers)
-BIM_sero_truA_input <- serotype_truA_input_data_list$BIM_Input_table
-write.table(BIM_sero_truA_input, "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_truA_input.txt",
+# serotype-gpsc pair
+serotype_gpsc_input_data_list <- metadata_to_BIM_imput(GPS_curated_table, GPS_curated_carriagerate, pair_colname1 = "In_Silico_serotype", pair_colname2 = "GPSC_PoPUNK2")
+BIM_sero_gpsc_input <- serotype_gpsc_input_data_list$BIM_Input_table
+write.table(BIM_sero_gpsc_input, "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM_input/BIM_sero_gpsc_input.txt",
             sep = "\t", quote = FALSE, col.names = TRUE, row.names = FALSE)
 
-BIM_sero_truA_input <- read.table("BIM_sero_truA_input.txt", sep = "\t", header = TRUE)
+
+BIM_sero_gpsc_input <- read.table("BIM_sero_gpsc_input.txt", sep = "\t", header = TRUE)
 
 ## run BIM -------------------------------------------------
 # feature1: serotype
-# feature2: iga
-s_pneumoniae_sero_variant_data <- process_input_data(BIM_sero_variant_input, main_feature = "feature1", 
-                                                     use_feature2 = TRUE, combine_feature2 = FALSE, condense = FALSE)
-
-two_feature_model_name = "serotype_determined_gene_adjusted_poisson.stan"
-two_feature_model_stan = stan_model(two_feature_model_name)
-num_chains=2
-num_iter=1e4
-num_cores=parallel::detectCores()
-
-serotype_based_gene_adjusted_model_fit<-rstan::sampling(two_feature_model_stan,
-                  data = s_pneumoniae_sero_variant_data,
-                  iter = num_iter,
-                  cores = num_cores,
-                  chains = num_chains)
-serotype_based_gene_adjusted_model_fit@model_name <- "serotype_based_gene_adjusted_model"
-launch_shinystan(serotype_based_gene_adjusted_model_fit)
-
-BIM_variant_sero_input <- BIM_sero_variant_input
-colnames(BIM_variant_sero_input) <- c("study", "feature2", "carriage", "disease", "carriage_samples", "surveillance_population", "time_interval", "feature1")
-
-
-# feature1: serotype
-# feature2: truA
-s_pneumoniae_sero_truA_data <- process_input_data(BIM_sero_truA_input, main_feature = "feature1", 
+# feature2: gpsc
+s_pneumoniae_sero_gpsc_data <- process_input_data(BIM_sero_gpsc_input, main_feature = "feature1", 
                                                      use_feature2 = TRUE, combine_feature2 = FALSE, condense = FALSE)
 
 two_feature_model_name = "serotype_determined_gene_adjusted_poisson.stan"
 two_feature_model_stan = stan_model(two_feature_model_name)
 num_chains=3
-num_iter=2e4
+num_iter=1e4
 num_cores=parallel::detectCores()
 
-serotype_based_trueA_adjusted_model_fit <- rstan::sampling(two_feature_model_stan,
-                                                        data = s_pneumoniae_sero_truA_data,
+serotype_based_gpsc_adjusted_model_fit<-rstan::sampling(two_feature_model_stan,
+                                                        data = s_pneumoniae_sero_gpsc_data,
                                                         iter = num_iter,
                                                         cores = num_cores,
                                                         chains = num_chains)
-serotype_based_trueA_adjusted_model_fit@model_name <- "serotype_based_trueA_adjusted_model"
+
+serotype_based_gpsc_adjusted_model_fit@model_name <- "serotype_based_gpsc_adjusted_model"
+
 
 ## save model output
-saveRDS(serotype_based_trueA_adjusted_model_fit, "serotype_based_trueA_adjusted_model_fit.rds")
-
-
-launch_shinystan(serotype_based_gene_adjusted_model_fit)
+saveRDS(serotype_based_gpsc_adjusted_model_fit, "serotype_based_gpsc_adjusted_model_fit.rds")
 
 
 
-# feature1: iga 
+# feature1: gpsc 
 # feature2: serotype
-s_pneumoniae_variant_sero_data <- process_input_data(BIM_variant_sero_input, main_feature = "feature1", 
+BIM_gpsc_sero_input <- BIM_sero_gpsc_input
+colnames(BIM_gpsc_sero_input) <- c("study", "feature2", "carriage", "disease", "carriage_samples", "surveillance_population", "time_interval", "feature1")
+
+
+
+s_pneumoniae_gpsc_sero_data <- process_input_data(BIM_gpsc_sero_input, main_feature = "feature1", 
                                                      use_feature2 = TRUE, combine_feature2 = FALSE, condense = FALSE)
 
-gene_based_serotype_adjusted_model_fit <-rstan::sampling(two_feature_model_stan,
-                                                           data = s_pneumoniae_variant_sero_data,
-                                                           iter = num_iter,
-                                                           cores = num_cores,
-                                                           chains = num_chains)
-gene_based_serotype_adjusted_model_fit@model_name <- "gene_based_serotype_adjusted_model"
+two_feature_model_name = "serotype_determined_gene_adjusted_poisson.stan"
+two_feature_model_stan = stan_model(two_feature_model_name)
+num_chains=3
+num_iter=1e4
+num_cores=parallel::detectCores()
 
-
-
-s_pneumoniae_sero_only_data <- process_input_data(BIM_sero_variant_input, main_feature = "feature1", 
-                                                     use_feature2 = FALSE, combine_feature2 = FALSE, condense = FALSE)
-
-one_feature_model_name = "/Users/hc14/Documents/PhD_project/Invasiveness/Stan_Bayesian/BIM/stan/adjusted_type_specific_poisson.stan"
-one_feature_model_stan = stan_model(one_feature_model_name)
-
-s_pneumoniae_sero_only_model_fit <-rstan::sampling(one_feature_model_stan,
-                                                         data = s_pneumoniae_sero_only_data,
+gpsc_based_serotype_adjusted_model_fit <-rstan::sampling(two_feature_model_stan,
+                                                         data = s_pneumoniae_gpsc_sero_data,
                                                          iter = num_iter,
                                                          cores = num_cores,
                                                          chains = num_chains)
-s_pneumoniae_sero_only_model_fit@model_name <- "serotype_based_model"
+gpsc_based_serotype_adjusted_model_fit@model_name <- "gpsc_based_serotype_adjusted_model"
 
-variant_based_data <- process_input_data(BIM_sero_variant_input, main_feature = "feature2", 
+
+## feature: serotype
+s_pneumoniae_sero_only_data <- process_input_data(BIM_sero_gpsc_input, main_feature = "feature1", 
                                                   use_feature2 = FALSE, combine_feature2 = FALSE, condense = FALSE)
-variant_based_model_fit <-rstan::sampling(one_feature_model_stan,
-                                                   data = variant_based_data,
+
+one_feature_model_name = "adjusted_type_specific_poisson.stan"
+one_feature_model_stan = stan_model(one_feature_model_name)
+num_chains=3
+num_iter=1e4
+num_cores=parallel::detectCores()
+
+s_pneumoniae_sero_only_model_fit <-rstan::sampling(one_feature_model_stan,
+                                                   data = s_pneumoniae_sero_only_data,
                                                    iter = num_iter,
                                                    cores = num_cores,
                                                    chains = num_chains)
+s_pneumoniae_sero_only_model_fit@model_name <- "serotype_based_model"
+saveRDS(s_pneumoniae_sero_only_model_fit, "s_pneumoniae_sero_only_model_fit.rds")
+
+
+
+## feature: gpsc
+BIM_gpsc_sero_input <- BIM_sero_gpsc_input
+colnames(BIM_gpsc_sero_input) <- c("study", "feature2", "carriage", "disease", "carriage_samples", "surveillance_population", "time_interval", "feature1")
+
+s_pneumoniae_gpsc_only_data <- process_input_data(BIM_gpsc_sero_input, main_feature = "feature1", 
+                                                  use_feature2 = FALSE, combine_feature2 = FALSE, condense = FALSE)
+
+s_pneumoniae_gpsc_only_model_fit <-rstan::sampling(one_feature_model_stan,
+                                                   data = s_pneumoniae_gpsc_only_data,
+                                                   iter = num_iter,
+                                                   cores = num_cores,
+                                                   chains = num_chains)
+
+
+
+variant_based_data <- process_input_data(BIM_sero_variant_input, main_feature = "feature2", 
+                                         use_feature2 = FALSE, combine_feature2 = FALSE, condense = FALSE)
+variant_based_model_fit <-rstan::sampling(one_feature_model_stan,
+                                          data = variant_based_data,
+                                          iter = num_iter,
+                                          cores = num_cores,
+                                          chains = num_chains)
 variant_based_model_fit@model_name <- "variant_based_model"
 
 launch_shinystan(variant_based_model_fit)
@@ -563,7 +546,7 @@ colnames(BIM_truA_sero_input) <- c("study", "feature2", "carriage", "disease", "
 
 
 s_pneumoniae_truA_sero_data <- process_input_data(BIM_truA_sero_input, main_feature = "feature1", 
-                                                     use_feature2 = TRUE, combine_feature2 = FALSE, condense = FALSE)
+                                                  use_feature2 = TRUE, combine_feature2 = FALSE, condense = FALSE)
 
 truA_based_serotype_adjusted_model_fit <-rstan::sampling(two_feature_model_stan,
                                                          data = s_pneumoniae_truA_sero_data,
@@ -614,8 +597,8 @@ launch_shinystan(variant_based_model_fit)
 ## LOO-CV doesn't work for different models with different number of parameters
 serotype_variant_model_comparison <- progressionEstimation::compare_model_fits_with_loo(list(gene_based_serotype_adjusted_model_fit, 
                                                                                              serotype_based_gene_adjusted_model_fit, 
-                                                        s_pneumoniae_sero_only_model_fit, 
-                                                        variant_based_model_fit)) 
+                                                                                             s_pneumoniae_sero_only_model_fit, 
+                                                                                             variant_based_model_fit)) 
 serotype_variant_model_comparison_loo_df <- as.data.frame(serotype_variant_model_comparison)
 serotype_variant_model_comparison_loo <- serotype_variant_model_comparison_loo_df %>%
   tibble::rownames_to_column("Model")
@@ -734,9 +717,9 @@ output_df %<>% dplyr::bind_cols(carriage_df)
 
 
 s_pneumoniae_poisson_serobased_output_df <- progressionEstimation::process_progression_rate_model_output(serotype_based_model,
-                                                                                                                             BIM_sero_variant_input,
-                                                                                                                             strain_as_secondary_type = FALSE, 
-                                                                                                                             condense = TRUE)
-                                                                                                                             
+                                                                                                         BIM_sero_variant_input,
+                                                                                                         strain_as_secondary_type = FALSE, 
+                                                                                                         condense = TRUE)
+
 
 
